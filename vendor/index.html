@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Dashboard | AMP KART</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/global.css">
+    <link rel="stylesheet" href="../assets/css/vendor.css">
+</head>
+<body>
+
+      <header class="vendor-header">
+        <div class="shop-info" style="display: flex; align-items: center; gap: 12px;">
+            <div id="headerLogoContainer" style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--accent-gold); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                <i class="fa-solid fa-store" style="font-size: 1rem; color: var(--accent-gold);"></i>
+            </div>
+            <h3 id="shopNameDisplay" style="margin: 0; font-size: 1.2rem; font-weight: 600;">My Shop</h3>
+        </div>
+        <i class="fa-solid fa-bell text-gold" style="font-size: 1.2rem;"></i>
+    </header>
+
+
+    <main class="vendor-content">
+
+        <section id="view-dashboard" class="app-view active">
+            <div class="earnings-card">
+                <p>Pending Payments</p>
+                <h2 id="vendor-earnings">₹0</h2>
+                <small>Settlement Every Weekly</small>
+            </div>
+
+            <div class="stats-grid" style="margin-top: 20px;">
+                <div class="stat-card" style="padding: 15px;">
+                    <h4 style="color: #666; font-size: 0.8rem;">Total Orders</h4>
+                    <h2 id="vendor-total-orders" style="color: var(--primary-green);">0</h2>
+                </div>
+                <div class="stat-card" style="padding: 15px;">
+                    <h4 style="color: #666; font-size: 0.8rem;">Pending Orders</h4>
+                    <h2 id="vendor-pending-orders" style="color: orange;">0</h2>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-orders" class="app-view">
+            <h3 style="color: var(--primary-green); margin-bottom: 15px;">My Orders</h3>
+            <div id="vendorOrderList">
+                </div>
+        </section>
+
+              <section id="view-inventory" class="app-view">
+            <h3 style="color: var(--primary-green); margin-bottom: 15px;">My Shop Stock</h3>
+            <div id="vendorStockList">
+                <div style="text-align: center; padding: 20px; color: #888;">Loading stock... ⏳</div>
+            </div>
+        </section>
+
+
+        <section id="view-profile" class="app-view">
+            <h3 style="color: var(--primary-green); margin-bottom: 15px;"></h3>
+            <div id="profileContainer"></div>
+        </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchVendorView('dashboard')">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="switchVendorView('orders')">
+            <i class="fa-solid fa-box"></i>
+            <span>Orders</span>
+        </div>
+        <div class="nav-item" onclick="switchVendorView('inventory')">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>Stock</span>
+        </div>
+        <div class="nav-item" onclick="switchVendorView('profile')">
+            <i class="fa-solid fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </nav>
+
+    <script>
+        // Check if logged in
+        let loggedInVendor = JSON.parse(localStorage.getItem('amp_logged_in_vendor'));
+        if(!loggedInVendor) {
+            window.location.href = 'login.html';
+        } else {
+            // Set Shop Name
+            document.getElementById('shopNameDisplay').innerText = loggedInVendor.shop;
+            
+            // 🖼️ Set Shop Logo in Header
+            const logoContainer = document.getElementById('headerLogoContainer');
+            if(loggedInVendor.image) {
+                // Agar vendor ne image upload kiya hai
+                logoContainer.innerHTML = `<img src="${loggedInVendor.image}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else {
+                // Default icon agar image nahi hai
+                logoContainer.innerHTML = `<i class="fa-solid fa-store" style="font-size: 1.1rem; color: var(--accent-gold);"></i>`;
+            }
+        }
+
+        function switchVendorView(viewId) {
+    document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active'));
+    document.getElementById('view-' + viewId).classList.add('active');
+
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    // Agar inventory tab hai, toh manager se load karein
+    if(viewId === 'inventory') {
+        loadInventoryData();
+    } 
+    // Agar profile tab hai, toh profile manager se load karein
+    else if (viewId === 'profile') {
+        loadVendorProfile();
+    }
+}
+    </script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+<script src="../api/firebase-config.js"></script>
+<script src="../api/image-uploader.js"></script>
+
+
+<script src="js/order-handler.js"></script>
+<script src="js/inventory-manager.js"></script>
+<script src="js/profile-manager.js"></script>
+
+</body>
+
+</html>

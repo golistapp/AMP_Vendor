@@ -1,0 +1,136 @@
+/* =========================================
+   AMP KART - GLOBAL CSS VARIABLES
+   ========================================= */
+:root {
+    --primary-green: #184124;    /* Main Brand Color */
+    --accent-gold: #F2B328;      /* Highlights & Buttons */
+    --bg-cream: #FDF8E7;         /* App Background */
+    --text-dark: #2B1D0F;        /* Main Text */
+    --text-light: #FFFFFF;       /* Text on Dark Backgrounds */
+    --card-bg: #FFFFFF;          /* White surface for clean look */
+    --shadow: 0 8px 24px rgba(24, 65, 36, 0.1);
+    --border-radius: 12px;
+    --transition: all 0.3s ease;
+}
+
+/* =========================================
+   RESET & BASE TYPOGRAPHY
+   ========================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: var(--bg-cream);
+    color: var(--text-dark);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================
+   PORTAL PAGE STYLING (index.html)
+   ========================================= */
+.portal-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--bg-cream) 0%, #f0e6c8 100%);
+}
+
+.portal-container {
+    text-align: center;
+    width: 100%;
+    max-width: 800px;
+    padding: 20px;
+}
+
+.logo-header {
+    margin-bottom: 40px;
+}
+
+.logo-icon {
+    font-size: 3rem;
+    color: var(--accent-gold);
+    background: var(--primary-green);
+    padding: 20px;
+    border-radius: 50%;
+    margin-bottom: 15px;
+    box-shadow: var(--shadow);
+}
+
+.logo-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary-green);
+    letter-spacing: 1px;
+}
+
+.logo-header p {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    letter-spacing: 2px;
+}
+
+.portal-cards {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.portal-card {
+    background: var(--card-bg);
+    padding: 40px 30px;
+    border-radius: var(--border-radius);
+    width: 280px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    border-bottom: 4px solid transparent;
+    transition: var(--transition);
+}
+
+.portal-card:hover {
+    transform: translateY(-10px);
+    border-bottom: 4px solid var(--accent-gold);
+}
+
+.portal-card .card-icon {
+    font-size: 3rem;
+    color: var(--primary-green);
+    margin-bottom: 20px;
+}
+
+.portal-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: var(--primary-green);
+}
+
+.portal-card p {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.footer-note {
+    margin-top: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-green);
+    letter-spacing: 1px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .portal-cards {
+        flex-direction: column;
+        align-items: center;
+    }
+    .portal-card {
+        width: 100%;
+        max-width: 320px;
+    }
+}

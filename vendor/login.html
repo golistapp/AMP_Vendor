@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Login | AMP KART</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/global.css">
+    <style>
+        .login-box {
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border-top: 5px solid var(--accent-gold);
+        }
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+        .login-input:focus {
+            border-color: var(--primary-green);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 25px;
+            background: var(--primary-green);
+            color: var(--text-light);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .google-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: #fff;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: 0.3s;
+        }
+        .google-btn:hover {
+            background: #f9f9f9;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.85rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+    </style>
+</head>
+<body class="portal-body">
+
+    <div class="login-box">
+        <i class="fa-solid fa-store" style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 10px;"></i>
+        <h2 style="color: var(--primary-green);">Vendor Login</h2>
+        <p style="font-size: 0.9rem; color: #666;">Manage your AMP KART orders</p>
+
+        <form id="vendorLoginForm" onsubmit="handleVendorLogin(event)">
+            <input type="tel" id="loginMobile" class="login-input" placeholder="Mobile Number" required>
+            
+            <div style="position: relative; margin-top: 20px;">
+                <input type="password" id="loginPassword" class="login-input" placeholder="Password" required style="margin-top: 0; padding-right: 45px;">
+                <i class="fa-solid fa-eye" id="togglePasswordIcon" onclick="togglePasswordVisibility()" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; cursor: pointer; font-size: 1.2rem;"></i>
+            </div>
+
+            <button type="submit" class="login-btn">Login to Shop</button>
+        </form>
+
+        <div class="divider">OR</div>
+
+        <button onclick="handleGoogleLogin()" class="google-btn">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 20px;">
+            Sign in with Google
+        </button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="../api/firebase-config.js"></script>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('loginPassword');
+            const icon = document.getElementById('togglePasswordIcon');
+            
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                icon.style.color = "var(--primary-green)";
+            } else {
+                passInput.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                icon.style.color = "#888";
+            }
+        }
+
+        // 🟢 MOBILE & PASSWORD LOGIN
+        async function handleVendorLogin(e) {
+            e.preventDefault();
+            const mobile = document.getElementById('loginMobile').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const btn = document.querySelector('.login-btn');
+
+            btn.innerText = "Verifying... ⏳";
+            btn.disabled = true;
+
+            try {
+                const snapshot = await db.ref('vendors').orderByChild('mobile').equalTo(mobile).once('value');
+
+                if (snapshot.exists()) {
+                    let isValid = false;
+                    snapshot.forEach(child => {
+                        let vendor = child.val();
+                        vendor.key = child.key; 
+                        
+                        if (vendor.password === password) {
+                            isValid = true;
+                            localStorage.setItem('amp_logged_in_vendor', JSON.stringify(vendor));
+                            window.location.href = 'index.html'; 
+                        }
+                    });
+
+                    if (!isValid) {
+                        alert('🚨 Incorrect Password!');
+                    }
+                } else {
+                    alert('🚨 Mobile Number is not registered!');
+                }
+            } catch (error) {
+                console.error("Login Error: ", error);
+                alert("🚨 System Error. Check your internet connection.");
+            } finally {
+                btn.innerText = "Login to Shop";
+                btn.disabled = false;
+            }
+        }
+
+        // 🟢 GOOGLE LOGIN LOGIC
+        async function handleGoogleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                // Google se login ka popup kholo
+                const result = await firebase.auth().signInWithPopup(provider);
+                const userEmail = result.user.email;
+
+                // Database me check karo ki kya ye email kisi vendor ke account se linked hai
+                const snapshot = await db.ref('vendors').orderByChild('linkedEmail').equalTo(userEmail).once('value');
+
+                if (snapshot.exists()) {
+                    let currentVendor = null;
+                    snapshot.forEach(child => {
+                        currentVendor = child.val();
+                        currentVendor.key = child.key;
+                    });
+                    
+                    // Session save karo aur Dashboard par bhejo
+                    localStorage.setItem('amp_logged_in_vendor', JSON.stringify(currentVendor));
+                    window.location.href = 'index.html';
+                } else {
+                    // Agar email linked nahi hai
+                    alert('🚨 This Gmail is not linked to any Vendor Account!\n\nPlease login using your Mobile Number first, then link your Gmail in the Profile section.');
+                    await firebase.auth().signOut(); // Security ke liye turant sign out kar do
+                }
+
+            } catch (error) {
+                console.error("Google Login Error: ", error);
+                alert("🚨 Google Sign-in Failed: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

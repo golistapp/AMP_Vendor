@@ -1,0 +1,116 @@
+/* =========================================
+   VENDOR PANEL SPECIFIC STYLES (Mobile First)
+   ========================================= */
+
+body {
+    background-color: #f7f9fc;
+    padding-bottom: 70px; /* Space for bottom nav */
+}
+
+/* --- Top Header --- */
+.vendor-header {
+    background: var(--primary-green);
+    color: var(--text-light);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.shop-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+}
+
+.online-badge {
+    font-size: 0.75rem;
+    color: #00ff88;
+    background: rgba(0, 255, 136, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* --- Main Content --- */
+.vendor-content {
+    padding: 20px;
+}
+
+/* --- App View Toggling --- */
+.app-view {
+    display: none;
+    animation: slideIn 0.3s ease;
+}
+
+.app-view.active {
+    display: block;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* --- Vendor Dashboard Cards --- */
+.earnings-card {
+    background: linear-gradient(135deg, var(--primary-green), #0f2b18);
+    color: var(--text-light);
+    padding: 25px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(24, 65, 36, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.earnings-card h2 {
+    font-size: 2.5rem;
+    color: var(--accent-gold);
+    margin: 10px 0;
+}
+
+.earnings-card small {
+    opacity: 0.8;
+}
+
+/* --- Bottom Navigation --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--card-bg);
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+    z-index: 1000;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #888;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.8rem;
+    gap: 4px;
+}
+
+.nav-item i {
+    font-size: 1.3rem;
+    margin-bottom: 2px;
+}
+
+.nav-item.active {
+    color: var(--primary-green);
+}
+
+.nav-item.active i {
+    color: var(--accent-gold);
+}

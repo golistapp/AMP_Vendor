@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMP KART | Admin Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/global.css">
+    <style>
+        .login-box {
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border-top: 5px solid var(--primary-green);
+            margin: 50px auto;
+        }
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="portal-body" style="background: var(--bg-cream);">
+
+    <div class="login-box">
+        <i class="fa-solid fa-user-shield" style="font-size: 3rem; color: var(--primary-green); margin-bottom: 10px;"></i>
+        <h2 style="color: var(--primary-green);">Admin Portal</h2>
+        
+               <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+            <input type="email" id="loginEmail" class="login-input" value="ampkartofficial@gmail.com" required>
+            
+            <div style="position: relative; margin-top: 20px;">
+                <input type="password" id="loginPassword" class="login-input" placeholder="Password" required style="margin-top: 0; padding-right: 45px;">
+                <i class="fa-solid fa-eye" id="togglePasswordIcon" onclick="togglePasswordVisibility()" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; cursor: pointer; font-size: 1.2rem;"></i>
+            </div>
+
+            <button type="submit" id="loginBtn" style="width: 100%; margin-top: 25px; padding: 15px; background: var(--primary-green); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Login</button>
+        </form>
+
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="../api/firebase-config.js"></script>
+
+    <script>
+        // 👁️ TOGGLE PASSWORD VISIBILITY FUNCTION
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('loginPassword');
+            const icon = document.getElementById('togglePasswordIcon');
+            
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                icon.style.color = "var(--primary-green)";
+            } else {
+                passInput.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                icon.style.color = "#888";
+            }
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.innerText = "Verifying... ⏳";
+            btn.disabled = true;
+
+            try {
+                await firebase.auth().signInWithEmailAndPassword(email, password);
+                window.location.href = 'index.html'; 
+            } catch (error) {
+                alert("🚨 Login Failed: " + error.message);
+                btn.innerText = "Login";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
