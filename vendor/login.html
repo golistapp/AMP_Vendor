@@ -100,7 +100,7 @@
 
         <div class="divider">OR</div>
 
-        <button onclick="handleGoogleLogin()" class="google-btn">
+        <button onclick="handleGoogleLogin()" class="google-btn" id="googleLoginBtn">
             <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 20px;">
             Sign in with Google
         </button>
@@ -115,7 +115,6 @@
         function togglePasswordVisibility() {
             const passInput = document.getElementById('loginPassword');
             const icon = document.getElementById('togglePasswordIcon');
-            
             if (passInput.type === "password") {
                 passInput.type = "text";
                 icon.classList.remove('fa-eye');
@@ -155,9 +154,7 @@
                         }
                     });
 
-                    if (!isValid) {
-                        alert('🚨 Incorrect Password!');
-                    }
+                    if (!isValid) alert('🚨 Incorrect Password!');
                 } else {
                     alert('🚨 Mobile Number is not registered!');
                 }
@@ -170,40 +167,51 @@
             }
         }
 
-             // 🟢 GOOGLE LOGIN LOGIC (Redirect Method for Mobile)
-        function handleGoogleLogin() {
+        // 🟢 GOOGLE POPUP LOGIN LOGIC
+        async function handleGoogleLogin() {
+            const btn = document.getElementById('googleLoginBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Please wait...`;
+            btn.disabled = true;
+
             const provider = new firebase.auth.GoogleAuthProvider();
-            // Popup ki jagah Redirect use karenge
-            firebase.auth().signInWithRedirect(provider);
+            // Force account selection to prevent popup closing bugs on mobile
+            provider.setCustomParameters({ prompt: 'select_account' });
+            
+            try {
+                const result = await firebase.auth().signInWithPopup(provider);
+                const userEmail = result.user.email;
+
+                const snapshot = await db.ref('vendors').orderByChild('linkedEmail').equalTo(userEmail).once('value');
+
+                if (snapshot.exists()) {
+                    let currentVendor = null;
+                    snapshot.forEach(child => {
+                        currentVendor = child.val();
+                        currentVendor.key = child.key;
+                    });
+                    
+                    localStorage.setItem('amp_logged_in_vendor', JSON.stringify(currentVendor));
+                    window.location.href = 'index.html';
+                } else {
+                    alert('🚨 This Gmail is not linked to any Vendor Account!\\n\\nPlease login using your Mobile Number first, then link your Gmail in the Profile section.');
+                    await firebase.auth().signOut(); 
+                    resetGoogleBtn(btn);
+                }
+
+            } catch (error) {
+                console.error("Google Login Error: ", error);
+                // Agar user ne khud popup band kiya hai toh alert mat dikhao
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    alert("🚨 Google Sign-in Failed: " + error.message);
+                }
+                resetGoogleBtn(btn);
+            }
         }
 
-        // 🟢 CHECK REDIRECT RESULT (Jab Google se wapas aayega tab ye chalega)
-        document.addEventListener('DOMContentLoaded', () => {
-            firebase.auth().getRedirectResult().then(async (result) => {
-                if (result && result.user) {
-                    const userEmail = result.user.email;
-                    const snapshot = await db.ref('vendors').orderByChild('linkedEmail').equalTo(userEmail).once('value');
-
-                    if (snapshot.exists()) {
-                        let currentVendor = null;
-                        snapshot.forEach(child => {
-                            currentVendor = child.val();
-                            currentVendor.key = child.key;
-                        });
-                        
-                        localStorage.setItem('amp_logged_in_vendor', JSON.stringify(currentVendor));
-                        window.location.href = 'index.html';
-                    } else {
-                        alert('🚨 This Gmail is not linked to any Vendor Account!\n\nPlease login using your Mobile Number first, then link your Gmail in the Profile section.');
-                        await firebase.auth().signOut(); 
-                    }
-                }
-            }).catch((error) => {
-                console.error("Google Login Error: ", error);
-                alert("🚨 Google Sign-in Failed: " + error.message);
-            });
-        });
-
+        function resetGoogleBtn(btn) {
+            btn.innerHTML = `<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="width: 20px;"> Sign in with Google`;
+            btn.disabled = false;
+        }
     </script>
 </body>
 </html>
