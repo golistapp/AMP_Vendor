@@ -2,18 +2,15 @@
 
 document.addEventListener('DOMContentLoaded', loadVendorData);
 
-let loggedInVendor = JSON.parse(localStorage.getItem('amp_logged_in_vendor'));
-
 function loadVendorData() {
-    if(!loggedInVendor) {
-        window.location.href = 'login.html';
-        return;
-    }
+    if(!loggedInVendor) return;
 
-    // 1. Pehle Products load karo (Earnings aur Names check karne ke liye)
+    // 1. Pehle Products load karo (Earnings, Names aur Images ke liye)
     db.ref('products').once('value', (prodSnapshot) => {
         const allProducts = [];
-        prodSnapshot.forEach(child => { allProducts.push(child.val()); });
+        if(prodSnapshot.exists()) {
+            prodSnapshot.forEach(child => { allProducts.push(child.val()); });
+        }
 
         // 2. Ab Orders ko Real-time listen karo
         db.ref('orders').on('value', (orderSnapshot) => {
@@ -22,7 +19,7 @@ function loadVendorData() {
             if(orderSnapshot.exists()) {
                 orderSnapshot.forEach(child => {
                     const order = child.val();
-                    order.key = child.key; // Firebase unique key
+                    order.key = child.key; 
                     
                     // Sirf is logged-in vendor ke orders filter karo
                     if(order.vendorId === loggedInVendor.id) {
@@ -38,7 +35,7 @@ function loadVendorData() {
 }
 
 // ----------------------------------------------------
-// 1. RENDER ORDERS LIST
+// 1. RENDER ORDERS LIST (With Product Image)
 // ----------------------------------------------------
 function renderVendorOrders(orders, products) {
     const orderList = document.getElementById('vendorOrderList');
@@ -97,19 +94,35 @@ function renderVendorOrders(orders, products) {
             actionButtons = `<p style="text-align:center; width:100%; color:var(--primary-green); font-weight:bold;">Delivery Complete ✅</p>`;
         }
 
+        // 🖼️ Pata lagao ki is order ka product kaunsa hai taaki Image nikal sakein
+        let productDetails = products.find(p => p.id === order.productId);
+        let productImg = productDetails && productDetails.image ? productDetails.image : '';
+
+        // Image ka HTML (Agar image nahi hai to default box icon dikhayega)
+        let imgHtml = productImg ? 
+            `<img src="${productImg}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">` : 
+            `<div style="width: 75px; height: 75px; border-radius: 8px; background: #f3f4f6; display:flex; align-items:center; justify-content:center; color:#9ca3af; border: 1px solid #eee;"><i class="fa-solid fa-box" style="font-size: 1.5rem;"></i></div>`;
+
         orderList.innerHTML += `
-            <div style="background:var(--card-bg); padding:20px; border-radius:12px; margin-bottom:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid ${statusColor};">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="background:var(--card-bg); padding:18px; border-radius:12px; margin-bottom:15px; box-shadow:0 4px 10px rgba(0,0,0,0.04); border-left: 5px solid ${statusColor};">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <span style="font-weight:800; color:var(--text-dark); font-size:1.1rem;">#${order.orderId}</span>
-                    <span style="font-size:0.75rem; font-weight:700; color:${statusColor}; background:${statusBg}; padding:4px 10px; border-radius:12px;">
+                    <span style="font-size:0.75rem; font-weight:700; color:${statusColor}; background:${statusBg}; padding:5px 12px; border-radius:12px;">
                         ${order.status.toUpperCase()}
                     </span>
                 </div>
-                <h4 style="color:var(--primary-green); margin-bottom:5px;">${order.productName}</h4>
-                <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">
-                    <i class="fa-solid fa-location-dot" style="color:var(--accent-gold);"></i> Pincode: <b>${order.pincode}</b><br>
-                    <small>Date: ${order.date || 'N/A'}</small>
-                </p>
+                
+                <div style="display:flex; gap: 15px; margin-bottom: 18px; align-items: center;">
+                    ${imgHtml}
+                    <div>
+                        <h4 style="color:var(--primary-green); margin-bottom:4px; font-size: 1.05rem;">${order.productName}</h4>
+                        <p style="font-size:0.85rem; color:#666; margin:0;">
+                            <i class="fa-solid fa-location-dot" style="color:var(--accent-gold);"></i> Pincode: <b>${order.pincode}</b><br>
+                            <small>Date: ${order.date || 'N/A'}</small>
+                        </p>
+                    </div>
+                </div>
+                
                 <div style="display:flex; gap:10px;">${actionButtons}</div>
             </div>
         `;

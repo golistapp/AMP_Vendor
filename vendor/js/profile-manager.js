@@ -1,13 +1,47 @@
 // vendor/js/profile-manager.js
 
+// 🟢 CATCH GOOGLE REDIRECT RESULT
+document.addEventListener('DOMContentLoaded', () => {
+    firebase.auth().getRedirectResult().then(async (result) => {
+        if (result && result.user) {
+            if (localStorage.getItem('is_linking_google') === 'true') {
+                localStorage.removeItem('is_linking_google'); 
+                
+                const userEmail = result.user.email;
+                if(loggedInVendor) {
+                    try {
+                        await db.ref('vendors/' + loggedInVendor.key).update({ linkedEmail: userEmail });
+                        loggedInVendor.linkedEmail = userEmail;
+                        localStorage.setItem('amp_logged_in_vendor', JSON.stringify(loggedInVendor));
+                        
+                        alert(`✅ Success!\nGmail (${userEmail}) has been linked to your shop.`);
+                        
+                        if(typeof switchVendorView === 'function') {
+                            switchVendorView('profile');
+                        }
+                    } catch (error) {
+                        alert("🚨 Database update failed: " + error.message);
+                    }
+                }
+            }
+        }
+    }).catch((error) => {
+        if(localStorage.getItem('is_linking_google') === 'true') {
+            localStorage.removeItem('is_linking_google');
+            alert("🚨 Failed to link Google Account: " + error.message);
+        }
+    });
+});
+
 function loadVendorProfile() {
     if(!loggedInVendor) return;
 
     const profileContainer = document.getElementById('profileContainer');
     if(!profileContainer) return;
 
+    // 🖼️ Added onclick for full view image
     const imgHtml = loggedInVendor.image ? 
-        `<img src="${loggedInVendor.image}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 0 auto; display: block;">` : 
+        `<img src="${loggedInVendor.image}" onclick="openProfileImageModal('${loggedInVendor.image}')" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 0 auto; display: block; cursor: pointer;" title="Click to view full image">` : 
         `<div style="width: 100px; height: 100px; border-radius: 50%; background: rgba(24,65,36,0.1); color: var(--primary-green); display: flex; justify-content: center; align-items: center; font-size: 3rem; margin: 0 auto; border: 3px solid var(--accent-gold);"><i class="fa-solid fa-store"></i></div>`;
 
     let locationStatus = '';
@@ -47,13 +81,13 @@ function loadVendorProfile() {
     }
 
     profileContainer.innerHTML = `
-        <div style="background: #fff; padding: 25px 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 25px;">
+        <div style="background: #fff; padding: 25px 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;">
             ${imgHtml}
             <h2 style="color: var(--primary-green); margin-top: 15px; font-size: 1.4rem;">${loggedInVendor.shop}</h2>
             <p style="background: rgba(242, 179, 40, 0.2); color: var(--primary-green); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-top: 5px; margin-bottom: 20px;">
                 ID: ${loggedInVendor.id}
             </p>
-
+            
             <div style="text-align: left; background: #f9fbf9; padding: 15px; border-radius: 12px; border: 1px solid #eee;">
                 <p style="margin-bottom: 12px; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between;">
                     <span><i class="fa-solid fa-user" style="color: #888; width: 25px;"></i> Owner</span> 
@@ -74,53 +108,92 @@ function loadVendorProfile() {
                     <span><i class="fa-solid fa-map-pin" style="color: #888; width: 25px;"></i> Geo-Map</span> 
                     ${locationStatus}
                 </p>
-
+                
                 ${gmailSyncHtml}
             </div>
-
+            
             ${updateLocationBtn}
-
         </div>
 
-        <button onclick="vendorLogout()" style="width: 100%; padding: 15px; background: #dc2626; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(220,38,38,0.2); display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <button onclick="openPasswordModal()" style="width: 100%; padding: 12px; margin-bottom: 15px; background: #fff; color: var(--primary-green); border: 2px solid var(--primary-green); border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;">
+            <i class="fa-solid fa-lock"></i> Change Password
+        </button>
+
+        <button onclick="vendorLogout()" style="width: 100%; padding: 15px; margin-bottom: 30px; background: #dc2626; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(220,38,38,0.2); display: flex; align-items: center; justify-content: center; gap: 10px;">
             <i class="fa-solid fa-right-from-bracket"></i> Secure Logout
         </button>
     `;
 }
 
-// 🔴 SYNC GMAIL USING POPUP (100% Reliable for Mobile)
-async function syncGoogleAccount() {
-    const btn = document.getElementById('syncGoogleBtn');
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Opening Google...`;
-    btn.disabled = true;
+// 🖼️ PROFILE IMAGE MODAL LOGIC
+function openProfileImageModal(imgSrc) {
+    document.getElementById('modalProfileImg').src = imgSrc;
+    document.getElementById('profileImageModal').style.display = 'flex';
+}
 
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+function closeProfileImageModal() {
+    document.getElementById('profileImageModal').style.display = 'none';
+    document.getElementById('modalProfileImg').src = "";
+}
+
+// 🔒 CHANGE PASSWORD MODAL LOGIC
+function openPasswordModal() {
+    document.getElementById('oldPwd').value = '';
+    document.getElementById('newPwd').value = '';
+    document.getElementById('confirmPwd').value = '';
+    document.getElementById('passwordModal').style.display = 'flex';
+}
+
+function closePasswordModal() {
+    document.getElementById('passwordModal').style.display = 'none';
+}
+
+async function submitNewPassword() {
+    const oldPwd = document.getElementById('oldPwd').value.trim();
+    const newPwd = document.getElementById('newPwd').value.trim();
+    const confirmPwd = document.getElementById('confirmPwd').value.trim();
+
+    if(!oldPwd || !newPwd || !confirmPwd) {
+        alert("🚨 Please fill all password fields!");
+        return;
+    }
+
+    if(oldPwd !== loggedInVendor.password) {
+        alert("🚨 Current Password is incorrect!");
+        return;
+    }
+
+    if(newPwd !== confirmPwd) {
+        alert("🚨 New Passwords do not match!");
+        return;
+    }
 
     try {
-        const result = await firebase.auth().signInWithPopup(provider);
-        const userEmail = result.user.email;
-
-        // 1. Firebase RTDB me email update karo
-        await db.ref('vendors/' + loggedInVendor.key).update({
-            linkedEmail: userEmail
-        });
-
-        // 2. Local session me update karo
-        loggedInVendor.linkedEmail = userEmail;
+        // Update in Firebase Realtime Database
+        await db.ref('vendors/' + loggedInVendor.key).update({ password: newPwd });
+        
+        // Update local session
+        loggedInVendor.password = newPwd;
         localStorage.setItem('amp_logged_in_vendor', JSON.stringify(loggedInVendor));
-
-        alert(`✅ Success!\nGmail (${userEmail}) has been linked to your shop.\nYou can now use Google Login on the login page.`);
-        loadVendorProfile(); 
-
+        
+        alert("✅ Password changed successfully!");
+        closePasswordModal();
     } catch (error) {
-        console.error("Sync Error: ", error);
-        if (error.code !== 'auth/popup-closed-by-user') {
-            alert("🚨 Failed to link Google Account: " + error.message);
-        }
-        btn.innerHTML = `Link Gmail for Quick Login`;
-        btn.disabled = false;
+        console.error("Password Update Error:", error);
+        alert("🚨 Error changing password: " + error.message);
     }
+}
+
+// 🔴 SYNC GMAIL USING POPUP
+function syncGoogleAccount() {
+    const btn = document.getElementById('syncGoogleBtn');
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Redirecting to Google...`;
+    btn.disabled = true;
+
+    localStorage.setItem('is_linking_google', 'true'); 
+    
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithRedirect(provider);
 }
 
 async function updateVendorGeoLocation() {
@@ -139,7 +212,7 @@ async function updateVendorGeoLocation() {
         async (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-
+            
             try {
                 await db.ref('vendors/' + loggedInVendor.key).update({ lat: lat, lng: lng });
                 loggedInVendor.lat = lat;

@@ -19,12 +19,16 @@
                 <i class="fa-solid fa-xmark close-btn" onclick="toggleSidebar()"></i>
             </div>
             
-            <ul class="nav-links">
+                     <ul class="nav-links">
                 <li class="active" onclick="switchView('dashboard')">
                     <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
                 </li>
                 <li onclick="switchView('order-engine')">
                     <i class="fa-solid fa-bolt"></i> <span>Order Engine</span>
+                </li>
+                
+                <li onclick="switchView('all-orders')">
+                    <i class="fa-solid fa-clipboard-list"></i> <span>All Orders</span>
                 </li>
                 <li onclick="switchView('search-system')">
                     <i class="fa-solid fa-magnifying-glass"></i> <span>Master Search</span>
@@ -32,9 +36,10 @@
                 <li onclick="switchView('products')">
                     <i class="fa-solid fa-box-open"></i> <span>Products</span>
                 </li>
-                               <li onclick="switchView('vendors')">
+                <li onclick="switchView('vendors')">
                     <i class="fa-solid fa-users-gear"></i> <span>Vendors</span>
                 </li>
+
                 
                 <li onclick="adminLogout()" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; color: #ff6b6b;" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='#ff6b6b'">
                     <i class="fa-solid fa-right-from-bracket"></i> <span style="font-weight: 600;">Logout</span>
@@ -145,6 +150,42 @@
                         <div id="vendorSuggestionList"></div>
                     </div>
                 </section>
+
+                <section id="view-all-orders" class="app-view">
+                    <div class="card list-card">
+                        <h3><i class="fa-solid fa-clipboard-list text-gold"></i> Manage All Orders</h3>
+                        <div class="table-responsive">
+                            <table id="allOrdersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Order Info</th>
+                                        <th>Product & Location</th>
+                                        <th>Vendor Assigned</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminOrderList">
+                                    <tr><td colspan="5" style="text-align:center;">Loading orders...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <div id="orderDetailsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center; padding:15px; backdrop-filter: blur(4px);">
+                    <div style="background: #fff; width: 100%; max-width: 450px; border-radius: 16px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease; overflow: hidden;">
+                        
+                        <div style="background: var(--primary-green); padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1.1rem;"><i class="fa-solid fa-receipt text-gold"></i> Order Details</h3>
+                            <span onclick="closeOrderModal()" style="font-size:24px; cursor:pointer; color: white;">&times;</span>
+                        </div>
+
+                        <div id="orderDetailsContent" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+                            </div>
+                    </div>
+                </div>
+
 
 
             <section id="view-search-system" class="app-view">
@@ -348,9 +389,11 @@
                 'order-engine': 'Order Engine',
                 'search-system': 'Master Search',
                 'products': 'Product Management',
-                'vendors': 'Vendor Management'
+                'vendors': 'Vendor Management',
+                'all-orders': 'All Orders' // 🔴 FIX: undefined error solved
             };
-            document.getElementById('current-page-title').innerText = titles[viewId];
+            // Fallback agar title na mile
+            document.getElementById('current-page-title').innerText = titles[viewId] || 'Admin Control';
 
             // 🔴 BUG FIX: Menu apne aap khulne ka problem solved
             const sidebar = document.getElementById('sidebar');
@@ -408,6 +451,7 @@
     <script src="js/order-engine.js"></script>
     <script src="js/admin-dashboard.js"></script>
     <script src="js/search-engine.js"></script>
+ <script src="js/order-manager.js"></script>
 </body>
 </html>
 
