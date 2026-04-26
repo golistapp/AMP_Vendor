@@ -170,38 +170,40 @@
             }
         }
 
-        // 🟢 GOOGLE LOGIN LOGIC
-        async function handleGoogleLogin() {
+             // 🟢 GOOGLE LOGIN LOGIC (Redirect Method for Mobile)
+        function handleGoogleLogin() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-                // Google se login ka popup kholo
-                const result = await firebase.auth().signInWithPopup(provider);
-                const userEmail = result.user.email;
+            // Popup ki jagah Redirect use karenge
+            firebase.auth().signInWithRedirect(provider);
+        }
 
-                // Database me check karo ki kya ye email kisi vendor ke account se linked hai
-                const snapshot = await db.ref('vendors').orderByChild('linkedEmail').equalTo(userEmail).once('value');
+        // 🟢 CHECK REDIRECT RESULT (Jab Google se wapas aayega tab ye chalega)
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().getRedirectResult().then(async (result) => {
+                if (result && result.user) {
+                    const userEmail = result.user.email;
+                    const snapshot = await db.ref('vendors').orderByChild('linkedEmail').equalTo(userEmail).once('value');
 
-                if (snapshot.exists()) {
-                    let currentVendor = null;
-                    snapshot.forEach(child => {
-                        currentVendor = child.val();
-                        currentVendor.key = child.key;
-                    });
-                    
-                    // Session save karo aur Dashboard par bhejo
-                    localStorage.setItem('amp_logged_in_vendor', JSON.stringify(currentVendor));
-                    window.location.href = 'index.html';
-                } else {
-                    // Agar email linked nahi hai
-                    alert('🚨 This Gmail is not linked to any Vendor Account!\n\nPlease login using your Mobile Number first, then link your Gmail in the Profile section.');
-                    await firebase.auth().signOut(); // Security ke liye turant sign out kar do
+                    if (snapshot.exists()) {
+                        let currentVendor = null;
+                        snapshot.forEach(child => {
+                            currentVendor = child.val();
+                            currentVendor.key = child.key;
+                        });
+                        
+                        localStorage.setItem('amp_logged_in_vendor', JSON.stringify(currentVendor));
+                        window.location.href = 'index.html';
+                    } else {
+                        alert('🚨 This Gmail is not linked to any Vendor Account!\n\nPlease login using your Mobile Number first, then link your Gmail in the Profile section.');
+                        await firebase.auth().signOut(); 
+                    }
                 }
-
-            } catch (error) {
+            }).catch((error) => {
                 console.error("Google Login Error: ", error);
                 alert("🚨 Google Sign-in Failed: " + error.message);
-            }
-        }
+            });
+        });
+
     </script>
 </body>
 </html>

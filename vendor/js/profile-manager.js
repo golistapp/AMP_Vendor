@@ -1,5 +1,41 @@
 // vendor/js/profile-manager.js
 
+// 🟢 CATCH GOOGLE REDIRECT RESULT (Jab Gmail select karke wapas aayega)
+document.addEventListener('DOMContentLoaded', () => {
+    firebase.auth().getRedirectResult().then(async (result) => {
+        if (result && result.user) {
+            // Check karein ki kya vendor account link kar raha tha
+            if (localStorage.getItem('is_linking_google') === 'true') {
+                localStorage.removeItem('is_linking_google'); // System reset
+
+                const userEmail = result.user.email;
+                if(loggedInVendor) {
+                    try {
+                        // Firebase aur Local Storage me email save karo
+                        await db.ref('vendors/' + loggedInVendor.key).update({ linkedEmail: userEmail });
+                        loggedInVendor.linkedEmail = userEmail;
+                        localStorage.setItem('amp_logged_in_vendor', JSON.stringify(loggedInVendor));
+
+                        alert(`✅ Success!\nGmail (${userEmail}) has been linked to your shop.`);
+
+                        // Automatic profile tab open karo
+                        if(typeof switchVendorView === 'function') {
+                            switchVendorView('profile');
+                        }
+                    } catch (error) {
+                        alert("🚨 Database update failed: " + error.message);
+                    }
+                }
+            }
+        }
+    }).catch((error) => {
+        if(localStorage.getItem('is_linking_google') === 'true') {
+            localStorage.removeItem('is_linking_google');
+            alert("🚨 Failed to link Google Account: " + error.message);
+        }
+    });
+});
+
 function loadVendorProfile() {
     if(!loggedInVendor) return;
 
@@ -24,7 +60,6 @@ function loadVendorProfile() {
         `;
     }
 
-    // 🔴 GMAIL SYNC STATUS & BUTTON
     let gmailSyncHtml = '';
     if (loggedInVendor.linkedEmail) {
         gmailSyncHtml = `
@@ -54,7 +89,7 @@ function loadVendorProfile() {
             <p style="background: rgba(242, 179, 40, 0.2); color: var(--primary-green); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-top: 5px; margin-bottom: 20px;">
                 ID: ${loggedInVendor.id}
             </p>
-            
+
             <div style="text-align: left; background: #f9fbf9; padding: 15px; border-radius: 12px; border: 1px solid #eee;">
                 <p style="margin-bottom: 12px; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between;">
                     <span><i class="fa-solid fa-user" style="color: #888; width: 25px;"></i> Owner</span> 
@@ -75,12 +110,12 @@ function loadVendorProfile() {
                     <span><i class="fa-solid fa-map-pin" style="color: #888; width: 25px;"></i> Geo-Map</span> 
                     ${locationStatus}
                 </p>
-                
+
                 ${gmailSyncHtml}
             </div>
-            
+
             ${updateLocationBtn}
-            
+
         </div>
 
         <button onclick="vendorLogout()" style="width: 100%; padding: 15px; background: #dc2626; color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(220,38,38,0.2); display: flex; align-items: center; justify-content: center; gap: 10px;">
@@ -89,36 +124,17 @@ function loadVendorProfile() {
     `;
 }
 
-// 🔴 SYNC GMAIL ACCOUNT LOGIC
-async function syncGoogleAccount() {
+// 🔴 SYNC GMAIL ACCOUNT LOGIC (Redirect Method)
+function syncGoogleAccount() {
     const btn = document.getElementById('syncGoogleBtn');
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Linking Account...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Redirecting to Google...`;
     btn.disabled = true;
 
+    // Save state so we know what to do when page reloads
+    localStorage.setItem('is_linking_google', 'true'); 
+
     const provider = new firebase.auth.GoogleAuthProvider();
-
-    try {
-        const result = await firebase.auth().signInWithPopup(provider);
-        const userEmail = result.user.email;
-
-        // 1. Firebase RTDB me email update karo
-        await db.ref('vendors/' + loggedInVendor.key).update({
-            linkedEmail: userEmail
-        });
-
-        // 2. Local session me update karo
-        loggedInVendor.linkedEmail = userEmail;
-        localStorage.setItem('amp_logged_in_vendor', JSON.stringify(loggedInVendor));
-
-        alert(`✅ Success!\nGmail (${userEmail}) has been linked to your shop.\nYou can now use Google Login on the login page.`);
-        loadVendorProfile(); // Reload UI
-
-    } catch (error) {
-        console.error("Sync Error: ", error);
-        alert("🚨 Failed to link Google Account: " + error.message);
-        btn.innerHTML = `Link Gmail for Quick Login`;
-        btn.disabled = false;
-    }
+    firebase.auth().signInWithRedirect(provider);
 }
 
 async function updateVendorGeoLocation() {
@@ -137,7 +153,7 @@ async function updateVendorGeoLocation() {
         async (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            
+
             try {
                 await db.ref('vendors/' + loggedInVendor.key).update({ lat: lat, lng: lng });
                 loggedInVendor.lat = lat;
