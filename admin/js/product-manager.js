@@ -135,14 +135,15 @@ function renderVendorDropdown(vendors, blockId) {
 
 function showVendorDropdown(blockId) {
     const input = document.getElementById(`prodVendorDisplay_${blockId}`);
-    // Click karte hi agar pehle se kuch type kiya hua hai to filter karo, nahi to sab dikhao
-    if(input && input.value.trim() !== '') {
-        filterVendors(blockId);
-    } else {
-        renderVendorDropdown(allVendorsList, blockId);
-    }
+    
+    // Box par tap karte hi purana text select ho jayega (mobile par typing aasan karne ke liye)
+    if(input) input.select();
+
+    // Hamesha pehle saare vendors ki list dikhao taaki user ko sab options dikhein
+    renderVendorDropdown(allVendorsList, blockId);
     document.getElementById(`vendorDropdown_${blockId}`).style.display = 'block';
 }
+
 
 function filterVendors(blockId) {
     const input = document.getElementById(`prodVendorDisplay_${blockId}`);
