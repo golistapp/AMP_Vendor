@@ -75,14 +75,10 @@ async function handleVendorSubmit(e) {
     const pincode = document.getElementById('vendPincode').value.trim();
     const password = document.getElementById('vendPassword').value.trim();
     
-       // Get Location Values
     const lat = document.getElementById('vendLat').value.trim();
     const lng = document.getElementById('vendLng').value.trim();
-
-    // Location is now OPTIONAL, so we removed the strict check block here.
     
     const fileInput = document.getElementById('vendImage');
-
     const file = fileInput.files[0];
 
     let imageUrl = existingImage;
@@ -101,8 +97,13 @@ async function handleVendorSubmit(e) {
 
             const vendorData = { 
                 id: vendorId, 
-                name, shop, mobile, pincode, password, 
-                lat, lng, 
+                name: name, 
+                shop: shop, 
+                mobile: mobile, 
+                pincode: pincode, 
+                password: password, 
+                lat: lat, 
+                lng: lng, 
                 image: imageUrl || "", 
                 rating: 5.0, 
                 totalOrders: 0,
@@ -113,15 +114,19 @@ async function handleVendorSubmit(e) {
             alert(`Vendor Registered Successfully! 🏬\nID: ${vendorId}`);
         } else {
             const updateData = {
-                name, shop, mobile, pincode, password,
-                lat, lng, 
+                name: name, 
+                shop: shop, 
+                mobile: mobile, 
+                pincode: pincode, 
+                password: password,
+                lat: lat, 
+                lng: lng, 
                 image: imageUrl || ""
             };
             await db.ref('vendors/' + editKey).update(updateData);
             alert('Vendor Updated Successfully! ✅');
         }
 
-        // Form submit hone ke baad Modal close kar do
         hideVendorForm();
 
     } catch (error) {
@@ -147,77 +152,107 @@ function loadVendors() {
         }
 
         let vendorsArray = [];
-        snapshot.forEach(child => vendorsArray.push({ key: child.key, ...child.val() }));
+        snapshot.forEach(child => {
+            let vData = child.val();
+            vData.key = child.key;
+            vendorsArray.push(vData);
+        });
         vendorsArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         vendorsArray.forEach(vend => {
-            const imgHtml = vend.image ? 
-                `<img src="${vend.image}" style="width:45px; height:45px; border-radius:8px; object-fit:cover; margin-right:12px; border:1px solid #ddd;">` : 
-                `<div style="width:45px; height:45px; border-radius:8px; background:rgba(24, 65, 36, 0.1); display:inline-flex; align-items:center; justify-content:center; margin-right:12px; color:var(--primary-green);"><i class="fa-solid fa-store"></i></div>`;
+            try {
+                // Safe Fallbacks
+                let vName = vend.name || "Unknown";
+                let vShop = vend.shop || "Shop Name Missing";
+                let vImage = vend.image || "";
+                let vMobile = vend.mobile || "N/A";
+                let vPincode = vend.pincode || "N/A";
+                let vId = vend.id || "N/A";
+                let vLat = vend.lat || "";
+                let vLng = vend.lng || "";
+                
+                let parsedRating = parseFloat(vend.rating);
+                let vRating = !isNaN(parsedRating) ? parsedRating.toFixed(1) : "5.0";
 
-            // Escaping quotes safely for HTML attributes
-            const safeName = vend.name.replace(/'/g, "\\'");
-            const safeShop = vend.shop.replace(/'/g, "\\'");
-            const safeImage = vend.image ? vend.image.replace(/'/g, "\\'") : "";
-            const safeLat = vend.lat || "";
-            const safeLng = vend.lng || "";
+                let imgHtml = vImage ? 
+                    `<img src="${vImage}" style="width:45px; height:45px; border-radius:8px; object-fit:cover; margin-right:12px; border:1px solid #ddd;">` : 
+                    `<div style="width:45px; height:45px; border-radius:8px; background:rgba(24, 65, 36, 0.1); display:inline-flex; align-items:center; justify-content:center; margin-right:12px; color:var(--primary-green);"><i class="fa-solid fa-store"></i></div>`;
 
-            const locationIcon = (vend.lat && vend.lng) ? `<i class="fa-solid fa-map-pin" style="color: green; margin-left: 5px;" title="Location Captured"></i>` : '';
+                let locationIcon = (vLat && vLng) ? `<i class="fa-solid fa-map-pin" style="color: green; margin-left: 5px;" title="Location Linked"></i>` : `<i class="fa-solid fa-triangle-exclamation" style="color: orange; margin-left: 5px;" title="Location Not Linked"></i>`;
 
-            vendorList.innerHTML += `
-                <tr>
+                // 🔴 BULLETPROOF FIX: HTML me string format totne ka problem ab nahi aayega!
+                // Pure vendor data ko pehle string me badla, aur phir URI Encoded packet bana diya.
+                let safeVendData = encodeURIComponent(JSON.stringify(vend));
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
                     <td style="display:flex; align-items:center;">
                         ${imgHtml}
                         <div>
-                            <b style="color:var(--primary-green);">${vend.shop} ${locationIcon}</b><br>
-                            <small style="color:var(--accent-gold); font-weight:bold;">${vend.id}</small><br>
-                            <small style="color:#666;">${vend.name}</small>
+                            <b style="color:var(--primary-green);">${vShop} ${locationIcon}</b><br>
+                            <small style="color:var(--accent-gold); font-weight:bold;">${vId}</small><br>
+                            <small style="color:#666;">${vName}</small>
                         </div>
                     </td>
-                    <td>${vend.mobile}</td>
-                    <td><span style="background:#f3f4f6; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; color:#333;">${vend.pincode}</span></td>
-                    <td>⭐ ${vend.rating.toFixed(1)}</td>
+                    <td>${vMobile}</td>
+                    <td><span style="background:#f3f4f6; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; color:#333;">${vPincode}</span></td>
+                    <td>⭐ ${vRating}</td>
                     <td>
                         <div style="display:flex; gap:5px;">
-                            <button onclick="populateEditVendor('${vend.key}', '${safeName}', '${safeShop}', '${vend.mobile}', '${vend.pincode}', '${vend.password}', '${safeImage}', '${safeLat}', '${safeLng}')" style="background:#2563eb; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="populateEditVendor('${safeVendData}')" style="background:#2563eb; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;" title="Edit"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="deleteVendor('${vend.key}')" style="background:red; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;" title="Delete"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </td>
-                </tr>
-            `;
+                `;
+                // direct innerHTML se pehle elements create kar rahe hain taki memory safely insert kare
+                vendorList.appendChild(tr);
+
+            } catch (err) {
+                console.error("Skipped corrupt vendor rendering:", vend, err);
+                // Yadi ek data kharab bhi ho, toh loop chalta rahega
+            }
         });
     });
 }
 
-// 🟢 FILL FORM FOR EDITING
-function populateEditVendor(key, name, shop, mobile, pincode, password, image, lat, lng) {
-    document.getElementById('editVendorKey').value = key;
-    document.getElementById('existingVendImage').value = image;
-    
-    document.getElementById('vendName').value = name;
-    document.getElementById('vendShop').value = shop;
-    document.getElementById('vendMobile').value = mobile;
-    document.getElementById('vendPincode').value = pincode;
-    document.getElementById('vendPassword').value = password;
-    
-    document.getElementById('vendLat').value = lat;
-    document.getElementById('vendLng').value = lng;
-    document.getElementById('locationStatus').innerText = lat ? "Location loaded from database." : "Location not available. Click 'Live Location'.";
-    document.getElementById('locationStatus').style.color = lat ? "green" : "#666";
+// 🟢 FILL FORM FOR EDITING (Now using Encoded JSON Packet)
+function populateEditVendor(encodedData) {
+    // Encoded packet ko wapas normal data me decode kiya
+    const vend = JSON.parse(decodeURIComponent(encodedData));
 
-    document.getElementById('vendorFormTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-gold"></i> Edit Vendor: ${shop}`;
+    document.getElementById('editVendorKey').value = vend.key || "";
+    document.getElementById('existingVendImage').value = vend.image || "";
+    
+    document.getElementById('vendName').value = vend.name || "";
+    document.getElementById('vendShop').value = vend.shop || "";
+    document.getElementById('vendMobile').value = vend.mobile || "";
+    document.getElementById('vendPincode').value = vend.pincode || "";
+    document.getElementById('vendPassword').value = vend.password || "";
+    
+    document.getElementById('vendLat').value = vend.lat || "";
+    document.getElementById('vendLng').value = vend.lng || "";
+    
+    if(vend.lat && vend.lng) {
+        document.getElementById('locationStatus').innerText = "Location loaded from database.";
+        document.getElementById('locationStatus').style.color = "green";
+    } else {
+        document.getElementById('locationStatus').innerText = "Location not available. Click 'Live Location'.";
+        document.getElementById('locationStatus').style.color = "#666";
+    }
+
+    document.getElementById('vendorFormTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-gold"></i> Edit Vendor: ${vend.shop || "Unknown"}`;
     document.getElementById('submitVendorBtn').innerText = "Update Vendor";
     document.getElementById('submitVendorBtn').style.background = "#2563eb"; 
     document.getElementById('cancelEditVendorBtn').style.display = "block";
 
-    if (image) {
-        document.getElementById('vendImagePreview').src = image;
+    if (vend.image) {
+        document.getElementById('vendImagePreview').src = vend.image;
         document.getElementById('vendorImagePreviewContainer').style.display = 'block';
     } else {
         document.getElementById('vendorImagePreviewContainer').style.display = 'none';
     }
 
-    showVendorForm(); // Form me data bharne ke baad modal open karein
+    showVendorForm(); 
 }
 
 // 🟢 CANCEL EDIT & RESET
