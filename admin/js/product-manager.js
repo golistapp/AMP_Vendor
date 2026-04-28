@@ -5,7 +5,7 @@ let allVendorsList = [];
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
     loadVendorsForProducts();
-
+    
     // Form load hote hi ek default block add karenge
     setTimeout(() => {
         if(document.getElementById('multiVendorContainer')) {
@@ -44,7 +44,7 @@ function previewProductImage(event) {
 function addVendorBlock() {
     const container = document.getElementById('multiVendorContainer');
     const blockId = Date.now() + Math.floor(Math.random() * 1000); 
-
+    
     const removeBtn = container.children.length > 0 ? 
         `<button type="button" onclick="removeVendorBlock(${blockId})" style="position:absolute; top: -10px; right: -10px; background: #fff; border: none; color: #dc2626; font-size: 1.5rem; cursor: pointer; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"><i class="fa-solid fa-circle-minus"></i></button>` : '';
 
@@ -64,7 +64,7 @@ function addVendorBlock() {
             </div>
         </div>
     `;
-
+    
     container.insertAdjacentHTML('beforeend', blockHtml);
 }
 
@@ -74,11 +74,16 @@ function removeVendorBlock(blockId) {
 }
 
 // 🔍 SMART VENDOR DROPDOWN LOGIC (100% Crash-Proof)
+
 function loadVendorsForProducts() {
     db.ref('vendors').on('value', (snapshot) => {
         allVendorsList = [];
         if(snapshot.exists()) {
-            snapshot.forEach(child => allVendorsList.push(child.val()));
+            snapshot.forEach(child => {
+                // BUG FIX: Added curly braces to prevent implicit truthy return 
+                // that cancels the Firebase loop.
+                allVendorsList.push(child.val());
+            });
         }
     });
 }
@@ -86,8 +91,8 @@ function loadVendorsForProducts() {
 function renderVendorDropdown(vendors, blockId) {
     const dropdown = document.getElementById(`vendorDropdown_${blockId}`);
     if(!dropdown) return;
-
-    dropdown.innerHTML = ''; // Purana list clear karo
+    
+    dropdown.innerHTML = ''; // Clear previous list
 
     if (!vendors || vendors.length === 0) {
         dropdown.innerHTML = `<div style="padding: 12px; color: red; text-align: center; font-weight: bold;">No vendors found</div>`;
@@ -96,33 +101,33 @@ function renderVendorDropdown(vendors, blockId) {
 
     vendors.forEach(vend => {
         try {
-            // Data ko zabardasti string me badla taaki undefined par crash na ho
+            // Force string conversion to prevent undefined crashes
             let vShop = String(vend.shop || "Unknown Shop");
             let vName = String(vend.name || "Unknown Owner");
             let vMobile = String(vend.mobile || "N/A");
             let vId = String(vend.id || "N/A");
-
-            // HTML create karne ka safe tarika
+            
+            // Safe HTML element creation
             let item = document.createElement('div');
             item.style.cssText = "padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; flex-direction: column; transition: 0.2s;";
             item.onmouseover = () => item.style.background = '#f0e6c8';
             item.onmouseout = () => item.style.background = '#fff';
-
+            
             item.innerHTML = `
                 <b style="color: var(--primary-green); font-size: 0.95rem;">${vShop} <span style="font-size: 0.8rem; color: #888;">(${vName})</span></b>
                 <small style="color: var(--accent-gold); font-weight: bold;">📞 ${vMobile} | ID: ${vId}</small>
             `;
 
-            // Click function direct assign kiya, HTML break ka koi chance nahi
+            // Assign click handler directly to avoid HTML string breaking
             item.onclick = function() {
                 let displayInput = document.getElementById(`prodVendorDisplay_${blockId}`);
                 let idInput = document.getElementById(`prodVendorId_${blockId}`);
                 let nameInput = document.getElementById(`prodVendorName_${blockId}`);
-
+                
                 if(displayInput) displayInput.value = `${vShop} (${vName})`;
                 if(idInput) idInput.value = vId;
                 if(nameInput) nameInput.value = vShop;
-
+                
                 dropdown.style.display = 'none';
             };
 
@@ -133,41 +138,57 @@ function renderVendorDropdown(vendors, blockId) {
     });
 }
 
-function showVendorDropdown(blockId) {
-    const input = document.getElementById(`prodVendorDisplay_${blockId}`);
-
-    // Tap karte hi text select ho jayega
-    if(input) input.select();
-
-    // Hamesha saare vendors dikhao
-    renderVendorDropdown(allVendorsList, blockId);
-    document.getElementById(`vendorDropdown_${blockId}`).style.display = 'block';
-}
-
 function filterVendors(blockId) {
     const input = document.getElementById(`prodVendorDisplay_${blockId}`);
     if(!input) return;
 
     const query = input.value.toLowerCase().trim();
-
-    // 🔥 NEW: Agar user ne backspace dabakar box khali kar diya hai, toh sab dikhao
+    
+    // If input is empty, show all vendors
     if(query === '') {
         renderVendorDropdown(allVendorsList, blockId);
         document.getElementById(`vendorDropdown_${blockId}`).style.display = 'block';
         return;
     }
 
-    // Filter logic
+    // Filter Logic: Matches shop name, owner name, or mobile number
     const filtered = allVendorsList.filter(v => {
         const s = String(v.shop || "").toLowerCase();
         const n = String(v.name || "").toLowerCase();
         const m = String(v.mobile || "");
         return s.includes(query) || n.includes(query) || m.includes(query);
     });
-
+    
     renderVendorDropdown(filtered, blockId);
     document.getElementById(`vendorDropdown_${blockId}`).style.display = 'block';
 }
+
+
+function filterVendors(blockId) {
+    const input = document.getElementById(`prodVendorDisplay_${blockId}`);
+    if(!input) return;
+
+    const query = input.value.toLowerCase().trim();
+    
+    // Agar box khali hai (Cut/Delete karne ke baad), toh sab dikhao
+    if(query === '') {
+        renderVendorDropdown(allVendorsList, blockId);
+        document.getElementById(`vendorDropdown_${blockId}`).style.display = 'block';
+        return;
+    }
+
+    // 🔥 Filter Logic (Mobile Number aur Naam dono se jabardast search)
+    const filtered = allVendorsList.filter(v => {
+        const s = String(v.shop || "").toLowerCase();
+        const n = String(v.name || "").toLowerCase();
+        const m = String(v.mobile || "");
+        return s.includes(query) || n.includes(query) || m.includes(query);
+    });
+    
+    renderVendorDropdown(filtered, blockId);
+    document.getElementById(`vendorDropdown_${blockId}`).style.display = 'block';
+}
+
 
 
 // Dropdown ke bahar click karne par usko band karo
@@ -194,7 +215,7 @@ async function handleProductSubmit(e) {
 
     const id = document.getElementById('prodId').value.trim();
     const name = document.getElementById('prodName').value.trim();
-
+    
     const fileInput = document.getElementById('prodImage');
     const file = fileInput.files[0];
 
@@ -322,7 +343,7 @@ function loadProducts() {
             pData.key = child.key;
             productsArray.push(pData);
         });
-
+        
         productsArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         productsArray.forEach(prod => {
@@ -376,13 +397,13 @@ function populateEditProduct(encodedData) {
 
     document.getElementById('editProductKey').value = prod.key || "";
     document.getElementById('existingProdImage').value = prod.image || "";
-
+    
     document.getElementById('prodId').value = prod.id || "";
     document.getElementById('prodName').value = prod.name || "";
-
+    
     const container = document.getElementById('multiVendorContainer');
     container.innerHTML = '';
-
+    
     const blockId = Date.now();
     const blockHtml = `
         <div class="vendor-price-block" id="block_${blockId}" style="background: #f9fbf9; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-top: 15px; position: relative;">
@@ -433,10 +454,10 @@ function cancelProductEdit() {
     document.getElementById('addProductForm').reset();
     document.getElementById('editProductKey').value = "";
     document.getElementById('existingProdImage').value = "";
-
+    
     document.getElementById('multiVendorContainer').innerHTML = '';
     addVendorBlock();
-
+    
     const addBtn = document.getElementById('addMoreVendorBtn');
     if(addBtn) addBtn.style.display = 'flex';
 
