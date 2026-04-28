@@ -245,46 +245,20 @@
     </div>
 </section>
 
-  <section id="view-products" class="app-view">
+<section id="view-products" class="app-view" style="position: relative; min-height: 80vh;">
     <div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; flex-direction:column; backdrop-filter: blur(5px);">
         <span onclick="closeImageModal()" style="position:absolute; top:20px; right:30px; color:var(--accent-gold); font-size:45px; cursor:pointer; font-weight:bold;">&times;</span>
         <img id="modalImage" src="" style="max-width:90%; max-height:80%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); border: 3px solid var(--accent-gold);">
     </div>
 
-    <div class="card form-card">
-        <h3 id="productFormTitle"><i class="fa-solid fa-box-open text-gold"></i> Add New Product</h3>
+    <div class="card list-card">
+        <h3 style="margin-bottom: 15px;">Product Inventory</h3>
         
-        <form id="addProductForm" onsubmit="handleProductSubmit(event)">
-            <input type="hidden" id="editProductKey" value="">
-            <input type="hidden" id="existingProdImage" value="">
+        <div style="margin-bottom: 20px; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-gold);"></i>
+            <input type="text" id="productSearchBox" placeholder="Search by Product ID, Name, Vendor ID, Name or Mobile..." onkeyup="searchProducts()" style="width: 100%; padding: 15px 15px 15px 45px; border-radius: 12px; border: 1px solid rgba(242,179,40,0.5); outline: none; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: 0.3s;">
+        </div>
 
-            <div class="input-group">
-                <input type="text" id="prodId" placeholder="Product ID (e.g. PRD01)" required>
-                <input type="text" id="prodName" placeholder="Product Name (e.g. Sattu 500g)" required>
-            </div>
-
-            <div id="multiVendorContainer">
-                </div>
-            
-            <button type="button" id="addMoreVendorBtn" onclick="addVendorBlock()" style="margin-top: 10px; background: #eef2ff; color: #2563eb; border: 1px dashed #2563eb; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;">
-                <i class="fa-solid fa-plus"></i> Add Another Vendor for this Product
-            </button>
-            
-            <div id="productImagePreviewContainer" style="display:none; margin-top: 15px; text-align: center;">
-                <img id="imagePreview" src="" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; border: 2px solid var(--accent-gold); margin: 0 auto; box-shadow: var(--shadow);">
-            </div>
-            
-            <input type="file" id="prodImage" accept="image/*" onchange="previewProductImage(event)" style="width: 100%; margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
-            
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button type="submit" id="submitProductBtn" class="btn-primary" style="flex: 1;">Add Product</button>
-                <button type="button" id="cancelEditProductBtn" class="btn-primary" style="display:none; background: #888; flex: 1;" onclick="cancelProductEdit()">Cancel Edit</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="card list-card" style="margin-top: 20px;">
-        <h3>Product Inventory</h3>
         <div class="table-responsive">
             <table id="productTable">
                 <thead>
@@ -302,7 +276,49 @@
             </table>
         </div>
     </div>
+
+    <div onclick="showProductForm()" style="position: fixed; bottom: 30px; right: 30px; background: var(--primary-green); color: var(--accent-gold); width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 100; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fa-solid fa-plus"></i>
+    </div>
+
+    <div id="productFormModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center; padding:15px; backdrop-filter: blur(8px);">
+        
+        <div class="card form-card" style="width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative; margin: 0; animation: fadeIn 0.3s ease; border-top: 4px solid var(--accent-gold);">
+            
+            <span onclick="hideProductForm()" style="position:absolute; top:20px; right:20px; font-size:28px; cursor:pointer; color:#888; line-height: 1;">&times;</span>
+            
+            <h3 id="productFormTitle"><i class="fa-solid fa-box-open text-gold"></i> Add New Product</h3>
+            
+            <form id="addProductForm" onsubmit="handleProductSubmit(event)">
+                <input type="hidden" id="editProductKey" value="">
+                <input type="hidden" id="existingProdImage" value="">
+
+                <div class="input-group">
+                    <input type="text" id="prodId" placeholder="Product ID (e.g. PRD01)" required>
+                    <input type="text" id="prodName" placeholder="Product Name (e.g. Sattu 500g)" required>
+                </div>
+
+                <div id="multiVendorContainer"></div>
+                
+                <button type="button" id="addMoreVendorBtn" onclick="addVendorBlock()" style="margin-top: 10px; background: #eef2ff; color: #2563eb; border: 1px dashed #2563eb; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;">
+                    <i class="fa-solid fa-plus"></i> Add Another Vendor for this Product
+                </button>
+                
+                <div id="productImagePreviewContainer" style="display:none; margin-top: 15px; text-align: center;">
+                    <img id="imagePreview" src="" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; border: 2px solid var(--accent-gold); margin: 0 auto; box-shadow: var(--shadow);">
+                </div>
+                
+                <input type="file" id="prodImage" accept="image/*" onchange="previewProductImage(event)" style="width: 100%; margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 8px;">
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" id="submitProductBtn" class="btn-primary" style="flex: 1;">Add Product</button>
+                    <button type="button" id="cancelEditProductBtn" class="btn-primary" style="display:none; background: #888; flex: 1;" onclick="hideProductForm()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </section>
+
 
 
 

@@ -1,6 +1,16 @@
 // admin/js/product-manager.js
 
 let allVendorsList = []; 
+let allProductsMasterList = [];
+
+function showProductForm() {
+    document.getElementById('productFormModal').style.display = 'flex';
+}
+
+function hideProductForm() {
+    document.getElementById('productFormModal').style.display = 'none';
+    cancelProductEdit(); 
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
@@ -309,7 +319,7 @@ async function handleProductSubmit(e) {
             alert(`✅ Product Updated & Linked to ${productsDataToSave.length} Vendor(s)!`);
         }
 
-        cancelProductEdit();
+        hideProductForm();
 
     } catch (error) {
         console.error("Error saving product: ", error);
@@ -324,72 +334,104 @@ function resetProductBtn(btn) {
     btn.innerText = document.getElementById('editProductKey').value ? "Update Product" : "Add Product";
 }
 
-// 🟢 REAL-TIME LISTENER FOR PRODUCTS
+// 🟢 REAL-TIME LISTENER FOR PRODUCTS (UPDATED)
 function loadProducts() {
-    const productList = document.getElementById('productList');
-    if(!productList) return;
-
     db.ref('products').on('value', (snapshot) => {
-        productList.innerHTML = '';
+        allProductsMasterList = []; // Array clear karo
 
-        if(!snapshot.exists()) {
-            productList.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888;">No products found.</td></tr>';
-            return;
+        if(snapshot.exists()) {
+            snapshot.forEach(child => {
+                let pData = child.val();
+                pData.key = child.key;
+                allProductsMasterList.push(pData);
+            });
+            allProductsMasterList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
-
-        let productsArray = [];
-        snapshot.forEach(child => {
-            let pData = child.val();
-            pData.key = child.key;
-            productsArray.push(pData);
-        });
         
-        productsArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-        productsArray.forEach(prod => {
-            try {
-                let pId = String(prod.id || "N/A");
-                let pName = String(prod.name || "Unknown Product");
-                let pVendorId = String(prod.vendorId || "N/A");
-                let pVendorName = String(prod.vendorName || "Unknown Vendor");
-                let pCustPrice = parseFloat(prod.custPrice) || 0;
-                let pVendPrice = parseFloat(prod.vendPrice) || 0;
-                let pMargin = parseFloat(prod.margin) || 0;
-                let pImage = String(prod.image || "");
-
-                let safeProdData = encodeURIComponent(JSON.stringify(prod));
-
-                let imgHtml = pImage ? 
-                    `<img src="${pImage}" onclick="openImageModal('${pImage}')" style="width:45px; height:45px; border-radius:8px; object-fit:cover; border: 1px solid #ddd; cursor: zoom-in;">` : 
-                    `<div style="width:45px; height:45px; border-radius:8px; background:#eee; display:flex; align-items:center; justify-content:center; border: 1px solid #ddd;"><i class="fa-solid fa-box"></i></div>`;
-
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${imgHtml}</td>
-                    <td><b style="color:var(--primary-green);">${pId}</b><br><small>${pName}</small></td>
-                    <td>
-                        <span style="background:rgba(242, 179, 40, 0.2); padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold; color:var(--primary-green);">
-                            ${pVendorId}
-                        </span><br>
-                        <small>${pVendorName}</small>
-                    </td>
-                    <td>₹${pCustPrice}</td>
-                    <td>₹${pVendPrice}</td>
-                    <td style="color:var(--primary-green); font-weight:bold;">₹${pMargin}</td>
-                    <td>
-                        <div style="display:flex; gap:5px;">
-                            <button onclick="populateEditProduct('${safeProdData}')" style="background:#2563eb; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteProduct('${prod.key}')" style="background:red; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </td>
-                `;
-                productList.appendChild(tr);
-            } catch (err) {
-                console.error("Skipped corrupt product rendering:", prod, err);
-            }
-        });
+        renderProductTable(allProductsMasterList);
     });
 }
+
+// 🟢 RENDER TABLE LOGIC (NEW)
+function renderProductTable(productsArray) {
+    const productList = document.getElementById('productList');
+    if(!productList) return;
+    
+    productList.innerHTML = '';
+
+    if(productsArray.length === 0) {
+        productList.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888;">No products found.</td></tr>';
+        return;
+    }
+
+    productsArray.forEach(prod => {
+        try {
+            let pId = String(prod.id || "N/A");
+            let pName = String(prod.name || "Unknown Product");
+            let pVendorId = String(prod.vendorId || "N/A");
+            let pVendorName = String(prod.vendorName || "Unknown Vendor");
+            let pCustPrice = parseFloat(prod.custPrice) || 0;
+            let pVendPrice = parseFloat(prod.vendPrice) || 0;
+            let pMargin = parseFloat(prod.margin) || 0;
+            let pImage = String(prod.image || "");
+
+            let safeProdData = encodeURIComponent(JSON.stringify(prod));
+
+            let imgHtml = pImage ? 
+                `<img src="${pImage}" onclick="openImageModal('${pImage}')" style="width:45px; height:45px; border-radius:8px; object-fit:cover; border: 1px solid #ddd; cursor: zoom-in;">` : 
+                `<div style="width:45px; height:45px; border-radius:8px; background:#eee; display:flex; align-items:center; justify-content:center; border: 1px solid #ddd;"><i class="fa-solid fa-box"></i></div>`;
+
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${imgHtml}</td>
+                <td><b style="color:var(--primary-green);">${pId}</b><br><small>${pName}</small></td>
+                <td>
+                    <span style="background:rgba(242, 179, 40, 0.2); padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold; color:var(--primary-green);">
+                        ${pVendorId}
+                    </span><br>
+                    <small>${pVendorName}</small>
+                </td>
+                <td>₹${pCustPrice}</td>
+                <td>₹${pVendPrice}</td>
+                <td style="color:var(--primary-green); font-weight:bold;">₹${pMargin}</td>
+                <td>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="populateEditProduct('${safeProdData}')" style="background:#2563eb; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteProduct('${prod.key}')" style="background:red; color:white; border:none; width:30px; height:30px; border-radius:5px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            productList.appendChild(tr);
+        } catch (err) {
+            console.error("Skipped corrupt product rendering:", prod, err);
+        }
+    });
+}
+
+// 🟢 SMART SEARCH FUNCTION (NEW)
+function searchProducts() {
+    const searchInput = document.getElementById('productSearchBox').value.toLowerCase().trim();
+    
+    if(searchInput === "") {
+        renderProductTable(allProductsMasterList);
+        return;
+    }
+
+    const filteredProducts = allProductsMasterList.filter(prod => {
+        let pId = String(prod.id || "").toLowerCase();
+        let pName = String(prod.name || "").toLowerCase();
+        let pVendorId = String(prod.vendorId || "").toLowerCase();
+        let pVendorName = String(prod.vendorName || "").toLowerCase();
+        
+        return pId.includes(searchInput) || 
+               pName.includes(searchInput) || 
+               pVendorId.includes(searchInput) || 
+               pVendorName.includes(searchInput);
+    });
+
+    renderProductTable(filteredProducts);
+}
+
 
 // 🟢 EDIT FORM POPULATION
 function populateEditProduct(encodedData) {
@@ -446,7 +488,7 @@ function populateEditProduct(encodedData) {
         document.getElementById('productImagePreviewContainer').style.display = 'none';
     }
 
-    document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
+    showProductForm();
 }
 
 // 🟢 CANCEL EDIT
